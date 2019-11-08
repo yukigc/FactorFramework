@@ -10,6 +10,8 @@ import LoadData
 import Daily2Monthly
 import LoadIncome
 import Filters
+import FactorDecile
+import ConstructPort
 
 # if is not initial, load pkl files directly
 is_initial = 0
@@ -102,3 +104,65 @@ df_value_filters = Filters.value_filters(df_value)
 df_final_filters = df_size_filters & df_value_filters
 
 # %%
+
+df_size_decile = FactorDecile.size_decile(df_size, df_filters = df_final_filters)
+df_value_decile = FactorDecile.value_decile(df_value, df_filters = df_final_filters)
+
+factors_return = pd.DataFrame(index = df_monthly_return.index, columns = ['MKT', 'SMB', 'VMG'] )
+factors_return['MKT'] = ConstructPort.value_weighted(df_monthly_return, df_size, df_filters = df_final_filters)
+
+value_namelist = ['S/V','S/M','S/G','B/V','B/M','B/G']
+crosssec_return_CH3, cross_cnt_CH3 = ConstructPort.crosssec_portfolios(df_monthly_return, df_size, df_size_decile, df_value_decile, value_namelist)
+
+factors_return['SMB'] = (crosssec_return_CH3['S/V']+crosssec_return_CH3['S/M']+crosssec_return_CH3['S/G'] - \
+                         crosssec_return_CH3['B/V']-crosssec_return_CH3['B/M']-crosssec_return_CH3['B/G'])/3
+factors_return['VMG'] = (crosssec_return_CH3['S/V']+crosssec_return_CH3['B/V']-crosssec_return_CH3['S/G']-crosssec_return_CH3['B/G'])/2
+
+#  CH4
+daily_turnover = daily_trade_volume/daily_shares_total
+df_turnover_decile = FactorDecile.turnover_decile(daily_turnover, df_filters = df_final_filters)
+
+turnover_namelist = ['S/P','S/M','S/O','B/P','B/M','B/O']
+crosssec_return_CH4, cross_cnt_CH4 = ConstructPort.crosssec_portfolios(df_monthly_return, df_size, df_size_decile, df_turnover_decile, turnover_namelist)
+
+factors_return['SMB_1'] = (crosssec_return_CH4['S/P']+crosssec_return_CH4['S/M']+crosssec_return_CH4['S/O'] - \
+                         crosssec_return_CH4['B/P']-crosssec_return_CH4['B/M']-crosssec_return_CH4['B/O'])/3
+factors_return['PMO'] = (crosssec_return_CH4['S/P']+crosssec_return_CH4['B/P']-crosssec_return_CH4['S/O']-crosssec_return_CH4['B/O'])/2
+
+factors_return['SMB_new'] = (factors_return['SMB']+factors_return['SMB_1'])/2
+
+#%%
+factors_return = factors_return.loc['2000-01-01':,:]
+
+rf_series = ConstructPort.load_rf_series('./Data/一年期定期存款利率.csv', factors_return.index)
+factors_return['MKT'] = factors_return['MKT'] - rf_series['rf']
+
+factors_return = factors_return.astype(float)
+corr_matx = factors_return[['MKT', 'SMB', 'VMG']].corr(method='pearson')
+
+table3 = pd.DataFrame(index = ['MKT', 'SMB', 'VMG'], columns=['Mean', 'Std', 't-stat', 'MKT', 'SMB', 'VMG'])
+table3['Mean'] = factors_return.mean()*100
+table3['Std'] = factors_return.std()*100
+table3['t-stat'] = np.sqrt(factors_return['MKT'].count())*table3['Mean']/table3['Std']
+table3[['MKT', 'SMB', 'VMG']] = corr_matx.values
+
+corr_matx_new = factors_return[['MKT', 'SMB_new', 'VMG', 'PMO']].corr(method='pearson')
+table_CH4 = pd.DataFrame(index = ['MKT', 'SMB_new', 'VMG', 'PMO'], columns=['Mean', 'Std', 't-stat', 'MKT', 'SMB_new', 'VMG', 'PMO'])
+table_CH4['Mean'] = factors_return.mean()*100
+table_CH4['Std'] = factors_return.std()*100
+table_CH4['t-stat'] = np.sqrt(factors_return['MKT'].count())*table_CH4['Mean']/table_CH4['Std']
+table_CH4[['MKT', 'SMB_new', 'VMG', 'PMO']] = corr_matx_new.values
+
+
+#%%  corr check
+
+CH3_path = './Data/CH3_LSY_.csv'
+CH3 = pd.read_csv(CH3_path)
+CH3.index = CH3.iloc[:,0].apply(lambda x: datetime.datetime.strptime(str(x), '%Y%m%d'))
+CH3 = CH3[['mktrf', 'SMB', 'VMG']]
+
+print('Corrcoef')
+print('MKT: ', np.corrcoef(CH3['mktrf'][1:], factors_return['MKT'][1:]*100)[0][1])
+print('SMB: ', np.corrcoef(CH3['SMB'][1:], factors_return['SMB'][1:]*100)[0][1])
+print('VMG: ', np.corrcoef(CH3['VMG'][1:], factors_return['VMG'][1:]*100)[0][1])
+
