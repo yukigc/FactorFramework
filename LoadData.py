@@ -6,7 +6,6 @@ import datetime
 import math
 import copy
 
-
 # %%
 def get_df(variable, tname, initial_data, timeindex_day, stock_list, stocks_locate_cum, start_day, end_day):
     '''
