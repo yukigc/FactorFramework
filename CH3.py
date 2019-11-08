@@ -33,6 +33,7 @@ if is_initial:
     daily_close = LoadData.get_df('S_DQ_CLOSE' ,'TRADE_DT', Daily_return_with_cap, timeindex_day, stock_list, stocks_locate_cum, start_day, end_day)
     daily_shares_a = LoadData.get_df('S_SHARE_TOTALA' ,'TRADE_DT', Daily_return_with_cap, timeindex_day, stock_list, stocks_locate_cum, start_day, end_day)
     daily_shares_total = LoadData.get_df('TOT_SHR' ,'TRADE_DT',Daily_return_with_cap, timeindex_day, stock_list, stocks_locate_cum, start_day, end_day)
+    daily_trade_volume = LoadData.get_df('S_DQ_VOLUME' ,'TRADE_DT',Daily_return_with_cap, timeindex_day, stock_list, stocks_locate_cum, start_day, end_day)
 
     # load income data
     income_statement = pd.read_pickle('./Data/income.pkl')
@@ -60,6 +61,7 @@ else:
     daily_close = pd.read_pickle('./Data/daily_close.pkl')
     daily_shares_a = pd.read_pickle('./Data/daily_shares_a.pkl')
     daily_shares_total = pd.read_pickle('./Data/daily_shares_total.pkl')
+    daily_trade_volume = pd.read_pickle('./Data/daily_trade_volume.pkl')
 
     df_announce_date = pd.read_pickle('./Data/df_announce_date.pkl')
     df_quarterly_earnings = pd.read_pickle('./Data/df_quarterly_earnings.pkl')
@@ -93,6 +95,10 @@ df_value = df_monthly_earnings/(df_price*df_monthly_shares_total)
 # %% Condition Filters
 
 df_ipo_date_new = Filters.load_ipo_date('./Data/IPO_date.xlsx')
-ipo_filter = Filters.IPO_6m_filters(df_ipo_date_new, df_monthly_return)
+df_ipo_filter = Filters.IPO_6m_filters(df_ipo_date_new, df_monthly_return)
+df_trade_filters = Filters.trading_records_filters(daily_trade_volume, df_monthly_return, 0.75, 0.5, if_plot_ts = False)
+df_size_filters = Filters.size_filters(df_size, (df_ipo_filter&df_trade_filters), bottom_percentile = 0.3, if_plot_ratios = False)
+df_value_filters = Filters.value_filters(df_value)
+df_final_filters = df_size_filters & df_value_filters
 
 # %%

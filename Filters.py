@@ -32,8 +32,8 @@ def IPO_6m_filters(df_ipo_date, df_monthly_return):
         s_filter = copy.deepcopy(s)
         s_ipo_date = df_ipo_date.loc[s.name, 'ListedDate']
         s_ipo_date_6m = s_ipo_date + datetime.timedelta(6*30)
-        s_filter[:s_ipo_date_6m] = 0
-        s_filter[s_ipo_date_6m:] = 1
+        s_filter[:s_ipo_date_6m] = False
+        s_filter[s_ipo_date_6m:] = True
         return s_filter 
 
     ipo_filter = ipo_filter.apply(lambda s: ipo_stock(s))
