@@ -1,5 +1,6 @@
 #%% 
 import os
+import copy
 import datetime
 import numpy as np
 import pandas as pd
@@ -29,3 +30,27 @@ def financials_announced(df_quarterly_financials, df_announce_date, monthly_time
         announced_date = announced_date.astype('datetime64[ns]')
         announced_result[stock] = [df_quarterly_financials.loc[(announced_date[announced_date<t].index[-1]),stock] if len(announced_date[announced_date<t].index) else np.nan for t in announced_result.index]
     return announced_result
+
+
+def season_diff(s):
+    '''
+    season difference
+    before 2002: half year report
+    '''
+    result = copy.deepcopy(s)
+    result['1999-03-31'] = np.nan
+    result['2000-03-31'] = np.nan
+    result['2000-09-30'] = np.nan
+    result['2001-03-31'] = np.nan
+    result['2001-09-30'] = np.nan
+    #result['1998-12-31'] = s['1998-12-31'] - s['1998-06-30']
+    result['1999-12-31'] = s['1999-12-31'] - s['1999-06-30']
+    result['2000-12-31'] = s['2000-12-31'] - s['2000-06-30']
+    result['2001-12-31'] = s['2001-12-31'] - s['2001-06-30']
+
+    for t in range(0, len(s.index)):
+        if s.index[t].year >= 2002 and s.index[t].month != 3 :
+            result[s.index[t]] = s[s.index[t]] - s[s.index[t-1]]
+            
+    return result
+

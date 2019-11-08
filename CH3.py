@@ -8,6 +8,7 @@ import math
 import copy
 import LoadData
 import Daily2Monthly
+import LoadIncome
 
 # if is not initial, load pkl files directly
 is_initial = 0
@@ -18,15 +19,15 @@ is_initial = 0
 start_day = '1999-01-01'
 end_day = '2016-12-31'
 
+# load price,share data
+Daily_return_with_cap = pd.read_pickle('./Data/Daily_return_with_cap.pkl')
+stock_list = Daily_return_with_cap['S_INFO_WINDCODE'].unique()
+timeindex_day = Daily_return_with_cap['TRADE_DT'].unique()
+timeindex_day.sort()
+
 if is_initial:
-    # load price,share data
-    Daily_return_with_cap = pd.read_pickle('./Data/Daily_return_with_cap.pkl')
-    stock_list = Daily_return_with_cap['S_INFO_WINDCODE'].unique()
-    timeindex_day = Daily_return_with_cap['TRADE_DT'].unique()
-    timeindex_day.sort()
 
     stocks_locate_cum = LoadData.get_locate_cum(Daily_return_with_cap, 'TRADE_DT')
-
     daily_return = LoadData.get_df('adj_pct_chg', 'TRADE_DT',Daily_return_with_cap, timeindex_day, stock_list, stocks_locate_cum, start_day, end_day)
     daily_close = LoadData.get_df('S_DQ_CLOSE' ,'TRADE_DT', Daily_return_with_cap, timeindex_day, stock_list, stocks_locate_cum, start_day, end_day)
     daily_shares_a = LoadData.get_df('S_SHARE_TOTALA' ,'TRADE_DT', Daily_return_with_cap, timeindex_day, stock_list, stocks_locate_cum, start_day, end_day)
@@ -62,7 +63,8 @@ else:
     df_announce_date = pd.read_pickle('./Data/df_announce_date.pkl')
     df_quarterly_earnings = pd.read_pickle('./Data/df_quarterly_earnings.pkl')
 
-#%%
+#%% Monthly
+
 df_monthly_return = Daily2Monthly.cal_monthly_return(daily_return)
 df_monthly_shares_a = Daily2Monthly.generate_monthly_df(daily_shares_a)
 df_monthly_shares_total = Daily2Monthly.generate_monthly_df(daily_shares_total)
@@ -76,9 +78,18 @@ df_size = df_price*df_monthly_shares_a  # A-share capitalization
 # %%  Value
 
 # seasonal diff
-
+df_quarterly_earnings_diff = df_quarterly_earnings.apply(lambda s: LoadIncome.season_diff(s))
 
 # announce date adjustment
+monthly_timeline = Daily2Monthly.generate_monthly_index(df_monthly_return.index)
+earnings_path = './Data/df_monthly_earnings_adjusted_DIFF.pkl'
+df_monthly_earnings = LoadIncome.adjusted_financials(df_announce_date, df_quarterly_earnings_diff, earnings_path, monthly_timeline )
+
+df_monthly_earnings = df_monthly_earnings.loc[:,stock_list]
+df_value = df_monthly_earnings/(df_price*df_monthly_shares_total)
 
 
-# %%
+# %% Condition Filters
+
+
+
