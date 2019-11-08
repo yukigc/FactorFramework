@@ -44,6 +44,3 @@ def get_locate_cum(initial_data):
     stocks_locate_cum['start'] = stocks_locate_cum['start'].astype(int)
     stocks_locate_cum['end'] = stocks_locate_cum['TRADE_DT']-1
     return stocks_locate_cum
-
-
-# %%
