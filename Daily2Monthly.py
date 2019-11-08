@@ -2,8 +2,6 @@
 import numpy as np
 import pandas as pd
 
-#%%
-
 def generate_monthly_index(dailyindex):
     '''
     use the last trading day of each month as monthly time index

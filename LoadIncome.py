@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 def adjusted_financials(df_announce_date, df_quarterly_earnings, result_path, monthly_timeline ):
+   
     if os.path.exists(result_path):
         df_monthly_earnings = pd.read_pickle(result_path)
     else:
@@ -16,6 +17,9 @@ def adjusted_financials(df_announce_date, df_quarterly_earnings, result_path, mo
 
 
 def financials_announced(df_quarterly_financials, df_announce_date, monthly_timeline):
+    '''
+    get the latest announced data before month's end
+    '''
     announced_result = pd.DataFrame(index = monthly_timeline, columns = df_quarterly_financials.columns)
     for stock in df_quarterly_financials.columns:
         print(stock)

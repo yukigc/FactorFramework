@@ -1,4 +1,3 @@
-
 #%%
 import numpy as np
 import pandas as pd
@@ -6,7 +5,6 @@ import datetime
 import math
 import copy
 
-# %%
 def get_df(variable, tname, initial_data, timeindex_day, stock_list, stocks_locate_cum, start_day, end_day):
     '''
     tansform series to dataframe
@@ -30,17 +28,20 @@ def get_df(variable, tname, initial_data, timeindex_day, stock_list, stocks_loca
     
 
 
-def get_locate_cum(initial_data):
+def get_locate_cum(initial_data, tname):
     '''
     locate by sorted order
     '''
-    stocks_locate = initial_data[['TRADE_DT','S_INFO_WINDCODE']].groupby(by=['S_INFO_WINDCODE']).count()
+    stocks_locate = initial_data[[tname,'S_INFO_WINDCODE']].groupby(by=['S_INFO_WINDCODE']).count()
     stocks_locate_cum = stocks_locate.cumsum()
 
     stocks_locate_cum['start'] = np.nan
     stocks_locate_cum['end'] = np.nan
-    stocks_locate_cum['start'] = stocks_locate_cum['TRADE_DT'].shift(1)
+    stocks_locate_cum['start'] = stocks_locate_cum[tname].shift(1)
     stocks_locate_cum.loc['000001.SZ', 'start'] = 0
     stocks_locate_cum['start'] = stocks_locate_cum['start'].astype(int)
-    stocks_locate_cum['end'] = stocks_locate_cum['TRADE_DT']-1
+    stocks_locate_cum['end'] = stocks_locate_cum[tname]-1
     return stocks_locate_cum
+
+
+# %%
