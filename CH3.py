@@ -9,6 +9,7 @@ import copy
 import LoadData
 import Daily2Monthly
 import LoadIncome
+import Filters
 
 # if is not initial, load pkl files directly
 is_initial = 0
@@ -91,5 +92,7 @@ df_value = df_monthly_earnings/(df_price*df_monthly_shares_total)
 
 # %% Condition Filters
 
+df_ipo_date_new = Filters.load_ipo_date('./Data/IPO_date.xlsx')
+ipo_filter = Filters.IPO_6m_filters(df_ipo_date_new, df_monthly_return)
 
-
+# %%
