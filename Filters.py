@@ -97,5 +97,3 @@ def value_filters(df_value):
     return df_value.notnull()
 
 
-
-# %%

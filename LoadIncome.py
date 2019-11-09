@@ -38,13 +38,13 @@ def season_diff(s):
     before 2002: half year report
     '''
     result = copy.deepcopy(s)
-    result['1999-03-31'] = np.nan
+    #result['1999-03-31'] = np.nan
     result['2000-03-31'] = np.nan
     result['2000-09-30'] = np.nan
     result['2001-03-31'] = np.nan
     result['2001-09-30'] = np.nan
     #result['1998-12-31'] = s['1998-12-31'] - s['1998-06-30']
-    result['1999-12-31'] = s['1999-12-31'] - s['1999-06-30']
+    #result['1999-12-31'] = s['1999-12-31'] - s['1999-06-30']
     result['2000-12-31'] = s['2000-12-31'] - s['2000-06-30']
     result['2001-12-31'] = s['2001-12-31'] - s['2001-06-30']
 
