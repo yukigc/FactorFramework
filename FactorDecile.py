@@ -53,3 +53,19 @@ def turnover_decile(daily_turnover, df_filters):
     df_turnover_decile = df_turnover_decile.apply(lambda x: turnover_decile_rule(x, df_abnormal_turnover, df_filters), axis=1)
     
     return df_turnover_decile
+
+
+
+def trend_decile(df_ER_trend, df_filters):
+    df_trend_decile = pd.DataFrame(index = df_ER_trend.index, columns = df_ER_trend.columns )
+    def trend_decile_rule(x, df_ER_trend, df_filters):
+        # Low, Mid, High
+        test = df_ER_trend.loc[x.name,:]
+        test = test[df_filters.loc[x.name,:]]
+        x[list(test[test<=test.quantile(0.3)].index)] = 'L'
+        x[list(test[test>test.quantile(0.3)].index)] = 'M'
+        x[list(test[test>test.quantile(0.7)].index)] = 'H'
+        return x
+    df_trend_decile = df_trend_decile.apply(lambda x: trend_decile_rule(x, df_ER_trend, df_filters), axis=1)
+    return df_trend_decile
+

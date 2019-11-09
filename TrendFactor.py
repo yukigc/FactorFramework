@@ -259,8 +259,71 @@ df_expected_return = expected_MP3 + expected_MP5 + expected_MP10 +\
 
 #%%
 
+df_size_decile = FactorDecile.size_decile(df_size, df_filters = df_final_filters)
+df_value_decile = FactorDecile.value_decile(df_value, df_filters = df_final_filters)
+df_trend_decile = FactorDecile.trend_decile(df_expected_return, df_filters = df_final_filters)
 
 
+# 4-factor model, triple sort
+portfolio_namelist = ['S/V/H','S/V/M','S/V/L',
+                      'S/M/H','S/M/M','S/M/L',
+                      'S/G/H','S/G/M','S/G/L',
+                      'B/V/H','B/V/M','B/V/L',
+                      'B/M/H','B/M/M','B/M/L',
+                      'B/G/H','B/G/M','B/G/L']
+
+def triple_crosssec_portfolios(df_monthly_return, df_cap, df_size_decile, df_value_decile, df_trend_decile, namelist):
+    '''
+    triple sort, 2*3*3
+    '''
+    cross_return = pd.DataFrame(index = df_monthly_return.index, columns = namelist )
+    cross_cnt = pd.DataFrame(index = df_monthly_return.index, columns = namelist )
+    for t in range(len(cross_return.index)-1):
+        for c in cross_return.columns:
+            set_1 = set(df_size_decile.iloc[t,:][df_size_decile.iloc[t,:]==(c.split('/')[0])].index)
+            set_2 = set(df_value_decile.iloc[t,:][df_value_decile.iloc[t,:]==(c.split('/')[1])].index)
+            set_3 = set(df_trend_decile.iloc[t,:][df_trend_decile.iloc[t,:]==(c.split('/')[2])].index)
+            p_list = list(set_3.intersection(set_1.intersection(set_2)))
+            p_weight = df_cap.loc[cross_return.index[t], p_list]
+            p_next_return = df_monthly_return.loc[cross_return.index[t+1], p_list]
+            cross_return.loc[cross_return.index[t+1], c] = (p_weight*p_next_return).sum()/p_weight.sum()
+            #print((p_weight*p_next_return).sum()/p_weight.sum())
+            cross_cnt.loc[cross_return.index[t+1], c] = len(p_list)
+    return cross_return, cross_cnt
+
+crosssec_return_Trend, cross_cnt_Trend = triple_crosssec_portfolios(df_monthly_return, df_size, df_size_decile, df_value_decile, df_trend_decile, portfolio_namelist)
+
+#%%
+
+# factor construction
+
+factors_return['SMB'] = crosssec_return_Trend[['S/V/H','S/V/M','S/V/L','S/M/H','S/M/M','S/M/L','S/G/H','S/G/M','S/G/L']].mean(axis=1) -\
+                        crosssec_return_Trend[['B/V/H','B/V/M','B/V/L','B/M/H','B/M/M','B/M/L','B/G/H','B/G/M','B/G/L']].mean(axis=1)
+
+factors_return['VMG'] = crosssec_return_Trend[['S/V/H','S/V/M','S/V/L','B/V/H','B/V/M','B/V/L']].mean(axis=1) -\
+                        crosssec_return_Trend[['S/G/H','S/G/M','S/G/L','B/G/H','B/G/M','B/G/L']].mean(axis=1)
+
+factors_return['Trend'] = crosssec_return_Trend[['S/V/H','S/M/H','S/G/H','B/V/H','B/M/H','B/G/H']].mean(axis=1) -\
+                          crosssec_return_Trend[['S/V/L','S/M/L','S/G/L','B/V/L','B/M/L','B/G/L']].mean(axis=1)
+
+factors_return = factors_return.loc['2005-01-01':'2018-07-31',['Trend','MKT','SMB','VMG']]
+
+
+#%%  Summary
+
+def maxdrawdown(arr):
+	i = np.argmax((np.maximum.accumulate(arr) - arr)/np.maximum.accumulate(arr)) # end of the period
+	j = np.argmax(arr[:i]) # start of period
+	return (1-arr[i]/arr[j])
+
+summary_A = pd.DataFrame(index=['Mean','Std dev','Shapre ratio','Skewness','MDD'], 
+                        columns = ['Trend','MKT','SMB','VMG','PMO'])
+
+summary_A.loc['Mean',['Trend','MKT','SMB','VMG']] = factors_return.mean()*100
+summary_A.loc['Std dev',['Trend','MKT','SMB','VMG']] = factors_return.std()*100
+summary_A.loc['Shapre ratio',:] = summary_A.loc['Mean',:]/summary_A.loc['Std dev',:] 
+summary_A.loc['Skewness',['Trend','MKT','SMB','VMG']] = factors_return.skew()
+summary_A.loc['MDD',['Trend','MKT','SMB','VMG']] = factors_return[['Trend','MKT','SMB','VMG']].apply(lambda s: maxdrawdown(np.array((1+s).cumprod())))*100
 
 
 #%%
